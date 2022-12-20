@@ -1,30 +1,35 @@
+#include <Statistical.h>
 #include <M5Stack.h>
 #include <time.h>
 #include <Ticker.h>
 #include <math.h>
 
-#define pulsePin 35
-#define volPin 36
-#define freqPin 25
-#define ampPin 26
+#define pulsePin 35 //Input Pin
+#define volPin 36 //Input Pin
+#define freqPin 25 //Output Pin
+#define ampPin 26 //Output Pin 
+#define samplePeriod 250 //Milliseconds between samples
+#define timeOffset 2000 //Milliseconds delay of prediction
 
 Ticker heartRateSample;
 
 //using structs may be execssive but it would allow me to track time and get a 
 //proper slope for extrapolating and predicting current stress bpm.
-struct heartRateStruct {
-  int BPM;
-  int time;
-};
+//struct heartRateStruct {
+//  float BPM;
+//  uint8_t time;
+//};
 
+//struct heartRateStruct heartRate[50] = {NULL};
+
+uint8_t heartRateTime[50] = {NULL};
+float heartRateBPM[50] = {NULL};
 //int heartRate[50] = {NULL};
-int samplesHR[10] = {NULL};
+//float samplesHR[10] = {NULL};
 int babyVolume[50] = {NULL};
 int stress[50] = {NULL};
-int predictedHeartRate[50] = {NULL};
-int errorValue[10] = {NULL};
-
-struct heartRateStruct heartRate[50] = {NULL};
+float predictedHeartRate[50] = {NULL};
+float errorValue[10] = {NULL};
 
 
 
@@ -33,7 +38,7 @@ void setup()
   M5.begin();
   M5.Power.begin();
 
-  heartRateSample.attach_ms(1000, readHeartRate);
+  heartRateSample.attach_ms(samplePeriod, readHeartRate);
 
   //pinMode(pulsePin, INPUT);
   //pinMode(volPin, INPUT);
@@ -48,13 +53,14 @@ void setup()
 void readHeartRate() //Reads heart rate then stores it in an array, may change to struct to have time function
 {
 
-  int averageBPM = 0, averageClock = 0;
+  float averageBPM = 0; 
+  uint8_t averageClock = 0;
 
   for (int i = 50; i > 0; i--)
   {
-    if (heartRate[i - 1].BPM != NULL)
+    if (heartRateBPM[i - 1] != NULL)
     {
-      heartRate[i] = heartRate[i - 1];
+      heartRateBPM[i] = heartRateBPM[i - 1];
     }
   }
 
@@ -70,14 +76,14 @@ void readHeartRate() //Reads heart rate then stores it in an array, may change t
 
   }
 
-  heartRate[0].BPM = averageBPM/10000;
-  heartRate[0].time = averageClock/10000;
-  M5.Lcd.println(heartRate[0].time);
-  M5.Lcd.println(heartRate[0].BPM);
+  heartRateBPM[0] = averageBPM/10000;
+  heartRateTime[0] = averageClock/10000;
+  //M5.Lcd.println(heartRateTime[0]);
+  //M5.Lcd.println(heartRateBPM[0]);
 
-  if (heartRate[1].time != NULL)
+  if (heartRateTime[1] != NULL)
   {
-    M5.Lcd.println(heartRate[0].time - heartRate[1].time);
+    //M5.Lcd.println(heartRateTime[0] - heartRateTime[1]);
   }
 
 }
@@ -115,23 +121,30 @@ void motorControl(int Frequency, int Amplitude) //All inputs should be between 0
 
 
 
-void errorCorrection()
+float errorCorrection()
 {
 
+  return 0;
 }
 
 
 
 int currentHeartRate() //Linear regression algorithm
 {
-  float time = 0, slope = 0, error = 0, intercept = 0;
+
+  Linear_Regression<uint8_t, float> Regression(heartRateTime, heartRateBPM, sizeof(heartRateTime) / sizeof(heartRateTime[0]));
   
-
+  for (int i = 50; i > 0; i--)
+  {
+    if (predictedHeartRate[i - 1] != NULL)
+    {
+      predictedHeartRate[i] = predictedHeartRate[i - 1];
+    }
+  }
   
-
-
-
-  predictedHeartRate[0] = clock() * slope + error + intercept;
+  predictedHeartRate[0] = (clock() + timeOffset) * Regression.Slope() + Regression.Offset() + errorCorrection(); //Needs error correction to be added 
+  M5.Lcd.println(Regression.R2());
+  M5.Lcd.print(predictedHeartRate[0]);
   return predictedHeartRate[0];
 }
 
@@ -163,8 +176,10 @@ int stressLevel()
 
 void loop() 
 {
-  
+  currentHeartRate();
   //stressLevel();
-  
 
+  delay(5000);
+  M5.Lcd.clear();
+  M5.Lcd.setCursor(0,0);
 }
