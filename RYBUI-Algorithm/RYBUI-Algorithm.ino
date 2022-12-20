@@ -21,7 +21,7 @@ struct heartRateStruct {
 int samplesHR[10] = {NULL};
 int babyVolume[50] = {NULL};
 int stress[50] = {NULL};
-int predictedHR[50] = {NULL};
+int predictedHeartRate[50] = {NULL};
 int errorValue[10] = {NULL};
 
 struct heartRateStruct heartRate[50] = {NULL};
@@ -124,14 +124,14 @@ void errorCorrection()
 
 int currentHeartRate() //Linear regression algorithm
 {
+  float time = 0, slope = 0, error = 0, intercept = 0;
+  
+
   
 
 
-  
 
-
-
-
+  predictedHeartRate[0] = clock() * slope + error + intercept;
   return predictedHeartRate[0];
 }
 
