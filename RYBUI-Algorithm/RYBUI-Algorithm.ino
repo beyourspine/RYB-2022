@@ -54,7 +54,7 @@ void setup()
 
 
 void readHeartRate() //Reads heart rate then stores it in an array, may change to struct to have time function
-{
+{                    //Also averages a large number of samples for one sample to reduce effect of error, but could make a function to correct errors through comparison which would be simple
 
   float averageBPM = 0; 
   uint8_t averageClock = 0;
@@ -94,7 +94,7 @@ void readHeartRate() //Reads heart rate then stores it in an array, may change t
 
 
 int readVolume() //Reads volume into an array, may change to struct to have time variable
-{
+{                //May change to a float but depends on if its necessary
   int volume = 0; // Will be changed from 0 to input pin reading
                   //Section above should include reading volume from pin and converts to between 0-100 and stores in volume then array
   for (int i = 50; i > 0; i--)
@@ -159,7 +159,7 @@ void errorCorrection()
 int currentHeartRate() //Linear regression algorithm
 {
 
-  Linear_Regression<uint8_t, float> Regression(heartRateTime, heartRateBPM, sizeof(heartRateTime) / sizeof(heartRateTime[0]));
+  Linear_Regression<uint8_t, float> Regression(heartRateTime, heartRateBPM, sizeof(heartRateTime) / sizeof(heartRateTime[0])); //Linear regression algorithm from statistical library
   
   for (int i = 50; i > 0; i--)
   {
@@ -169,7 +169,7 @@ int currentHeartRate() //Linear regression algorithm
     }
   }
   
-  predictedHeartRate[0] = (clock() + timeOffset) * Regression.Slope() + Regression.Offset() + finalError; //Needs error correction needs tweaking or maybe its not needed
+  predictedHeartRate[0] = (clock() + timeOffset) * Regression.Slope() + Regression.Offset() + finalError; //Error correction needs tweaking or maybe its not needed
   M5.Lcd.println(Regression.R2());
   M5.Lcd.print(predictedHeartRate[0]);
   return predictedHeartRate[0];
