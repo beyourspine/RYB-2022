@@ -12,6 +12,7 @@
 #define timeOffset 2000 //Milliseconds delay of prediction
 
 Ticker heartRateSample;
+Ticker errorCorrection;
 
 //using structs may be execssive but it would allow me to track time and get a 
 //proper slope for extrapolating and predicting current stress bpm.
@@ -30,6 +31,7 @@ int babyVolume[50] = {NULL};
 int stress[50] = {NULL};
 float predictedHeartRate[50] = {NULL};
 float errorValue[10] = {NULL};
+int finalError = 0;
 
 
 
@@ -39,6 +41,7 @@ void setup()
   M5.Power.begin();
 
   heartRateSample.attach_ms(samplePeriod, readHeartRate);
+  errorCorrection.attach_ms(timeOffset, errorCorrection);
 
   //pinMode(pulsePin, INPUT);
   //pinMode(volPin, INPUT);
@@ -121,10 +124,34 @@ void motorControl(int Frequency, int Amplitude) //All inputs should be between 0
 
 
 
-float errorCorrection()
+void errorCorrection()
 {
 
-  return 0;
+  for (int i = 10; i > 0; i--)
+  {
+    if (errorValue[i - 1] != NULL)
+    {
+      errorValue[i] = errorValue[i - 1];
+    }
+  }
+
+  errorValue[0] = heartRateBPM[0] - predictedHeartRate[0]
+
+  for (int i = 0; i < 10; i++)
+  {
+    int q = 0, t = 0;
+
+    if (errorValue[i] != NULL)
+    {
+      q = q + errorValue[i];
+      t = t + 1;
+    }
+
+    if (i == 9)
+    {
+      finalError = q / t;
+    }
+  }
 }
 
 
@@ -142,7 +169,7 @@ int currentHeartRate() //Linear regression algorithm
     }
   }
   
-  predictedHeartRate[0] = (clock() + timeOffset) * Regression.Slope() + Regression.Offset() + errorCorrection(); //Needs error correction to be added 
+  predictedHeartRate[0] = (clock() + timeOffset) * Regression.Slope() + Regression.Offset() + finalError; //Needs error correction needs tweaking or maybe its not needed
   M5.Lcd.println(Regression.R2());
   M5.Lcd.print(predictedHeartRate[0]);
   return predictedHeartRate[0];
@@ -159,13 +186,13 @@ int stressLevel()
       stress[i] = stress[i - 1];
     }
   }
-  if (currentHeartRate() < 120)
+  if (heartRateBPM[0] <= 120 || readVolume < 50)
   {
     stress[0] = readVolume() / 2;
   }
   else 
   {
-    stress[0] = currentHeartRate() / 2.4;
+    stress[0] = heartRateBPM[0] / 2.4;
   }
   //Need to figure out how amplitude and frequency of motors effects stress now
   //It may just search randomly I guess but this should be more informed atleast
